@@ -2,6 +2,7 @@ from PyQt5 import QtOpenGL
 from PyQt5.QtWidgets import *
 from PyQt5 import QtCore
 from OpenGL.GL import *
+from hetool import HeController, HeModel, HeView, Tesselation
 
 class MyCanvas(QtOpenGL.QGLWidget):
     def __init__(self):
@@ -17,6 +18,11 @@ class MyCanvas(QtOpenGL.QGLWidget):
         self.m_buttonPressed = False
         self.m_pt0 = QtCore.QPoint(0.0,0.0)
         self.m_pt1 = QtCore.QPoint(0.0,0.0)
+        
+        self.tol = 10e-2
+        self.hemodel = HeModel()
+        self.heview = HeView(self.hemodel)
+        self.hecontroller = HeController(self.hemodel)
 
     def initializeGL(self):
         #glClearColor(1.0, 1.0, 1.0, 1.0)
@@ -118,6 +124,7 @@ class MyCanvas(QtOpenGL.QGLWidget):
         pt0_U = self.convertPtCoordsToUniverse(self.m_pt0)
         pt1_U = self.convertPtCoordsToUniverse(self.m_pt1)
         self.m_model.setCurve(pt0_U.x(),pt0_U.y(),pt1_U.x(),pt1_U.y())
+        self.hecontroller.insertSegment([pt0_U.x(),pt0_U.y(),pt1_U.x(),pt1_U.y()], self.tol)
         self.m_buttonPressed = False
         self.m_pt0.setX(0.0)
         self.m_pt0.setY(0.0)
@@ -153,4 +160,30 @@ class MyCanvas(QtOpenGL.QGLWidget):
                 glVertex2f(curv.getP1().getX(), curv.getP1().getY())
                 glVertex2f(curv.getP2().getX(), curv.getP2().getY())
             glEnd()
+            
+        if not(self.heview.isEmpty()):
+            print("teste")
+            patches = self.heview.getPatches() # retalhos, regioes construídas automaticamente
+            for pat in patches:
+                pts = pat.getPoints()
+                triangs = Tesselation.tessellate(pts)
+                for j in range(0, len(triangs)):
+                    glColor3f(3.0, 0.0, 1.0)
+                    glBegin(GL_TRIANGLES)
+                    glVertex2d(pts[triangs[j][0]].getX(), pts[triangs[j][0]].getY())
+                    glVertex2d(pts[triangs[j][1]].getX(), pts[triangs[j][1]].getY())
+                    glVertex2d(pts[triangs[j][2]].getX(), pts[triangs[j][2]].getY())
+                    glEnd()
+        
+            segments = self.heview.getSegments()
+            for curv in segments:
+                ptc = curv.getPointsToDraw()
+                glColor3f(0.0, 1.0, 1.0)
+                glBegin(GL_LINES)
+
+                glVertex2f(ptc[0].getX(), ptc[0].getY())
+                glVertex2f(ptc[1].getX(), ptc[1].getY())
+                
+                glEnd()
+                
         glEndList()
