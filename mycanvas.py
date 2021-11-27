@@ -19,7 +19,7 @@ class MyCanvas(QtOpenGL.QGLWidget):
         self.m_pt0 = QtCore.QPoint(0.0,0.0)
         self.m_pt1 = QtCore.QPoint(0.0,0.0)
         
-        self.tol = 10e-2
+        self.tol = 0.1
         self.hemodel = HeModel()
         self.heview = HeView(self.hemodel)
         self.hecontroller = HeController(self.hemodel)
@@ -121,6 +121,8 @@ class MyCanvas(QtOpenGL.QGLWidget):
             self.update()
     
     def mouseReleaseEvent(self, event):
+        print(self.m_pt0.x(), self.m_pt0.y())
+        print(self.m_pt1.x(), self.m_pt1.y())
         pt0_U = self.convertPtCoordsToUniverse(self.m_pt0)
         pt1_U = self.convertPtCoordsToUniverse(self.m_pt1)
         self.m_model.setCurve(pt0_U.x(),pt0_U.y(),pt1_U.x(),pt1_U.y())
@@ -130,29 +132,33 @@ class MyCanvas(QtOpenGL.QGLWidget):
         self.m_pt0.setY(0.0)
         self.m_pt1.setX(0.0)
         self.m_pt1.setY(0.0)
+        self.update()
+        self.paintGL()
     
     def paintGL(self):
         glClear(GL_COLOR_BUFFER_BIT)
-        if(self.m_model==None)or(self.m_model.isEmpty()): return
+        # if(self.m_model==None)or(self.m_model.isEmpty()): return
         glCallList(self.list)
         glDeleteLists(self.list, 1)
         self.list = glGenLists(1)
         glNewList(self.list, GL_COMPILE)
+        
+        # desenho dos pontos coletados
         pt0_U = self.convertPtCoordsToUniverse(self.m_pt0)
         pt1_U = self.convertPtCoordsToUniverse(self.m_pt1)
-        verts = self.m_model.getVerts()
         glColor3f(1.0, 0.0, 0.0)
         glBegin(GL_LINE_STRIP)
         glVertex2f(pt0_U.x(), pt0_U.y())
         glVertex2f(pt1_U.x(), pt1_U.y())
         glEnd()
+
         if not((self.m_model == None) and (self.m_model.isEmpty())):
             verts = self.m_model.getVerts()
             glColor3f(0.0, 1.0, 0.0) # green
-            glBegin(GL_TRIANGLES)
-            for vtx in verts:
-                glVertex2f(vtx.getX(), vtx.getY())
-            glEnd()
+            # glBegin(GL_TRIANGLES)
+            # for vtx in verts:
+            #     glVertex2f(vtx.getX(), vtx.getY())
+            # glEnd()
             curves = self.m_model.getCurves()
             glColor3f(0.0, 0.0, 1.0) # blue
             glBegin(GL_LINES)
@@ -164,21 +170,21 @@ class MyCanvas(QtOpenGL.QGLWidget):
         if not(self.heview.isEmpty()):
             print("teste")
             patches = self.heview.getPatches() # retalhos, regioes construídas automaticamente
+            glColor3f(3.0, 0.0, 1.0)
             for pat in patches:
-                pts = pat.getPoints()
-                triangs = Tesselation.tessellate(pts)
-                for j in range(0, len(triangs)):
-                    glColor3f(3.0, 0.0, 1.0)
+                print(len(patches))
+                triangs = Tesselation.tessellate(pat.getPoints())
+                for triang in triangs:
                     glBegin(GL_TRIANGLES)
-                    glVertex2d(pts[triangs[j][0]].getX(), pts[triangs[j][0]].getY())
-                    glVertex2d(pts[triangs[j][1]].getX(), pts[triangs[j][1]].getY())
-                    glVertex2d(pts[triangs[j][2]].getX(), pts[triangs[j][2]].getY())
+                    for pt in triang:
+                        glVertex2d(pt.getX(), pt.getY())
                     glEnd()
-        
+
             segments = self.heview.getSegments()
+            glColor3f(0.0, 1.0, 1.0)
+            print(len(segments))
             for curv in segments:
                 ptc = curv.getPointsToDraw()
-                glColor3f(0.0, 1.0, 1.0)
                 glBegin(GL_LINES)
 
                 glVertex2f(ptc[0].getX(), ptc[0].getY())
