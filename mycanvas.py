@@ -194,7 +194,7 @@ class MyCanvas(QtOpenGL.QGLWidget):
                 
             verts = self.heview.getPoints()
             glColor3f(1.0, 0.0, 0.0)
-            glPointSize(10)
+            glPointSize(5)
             glBegin(GL_POINTS)
             for vert in verts:
                 glVertex2f(vert.getX(), vert.getY())
